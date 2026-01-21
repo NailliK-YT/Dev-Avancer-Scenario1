@@ -57,8 +57,43 @@ async function loadNaissance(com) {
 }
 
 // Test de la fonction de chargement des naissances
-for (const [ville, com] of Object.entries(villes)) {
-	loadNaissance(com).then(data => {
-		console.log(`Naissances à ${ville}:`, data);
-	});
+// for (const [ville, com] of Object.entries(villes)) {
+// 	loadNaissance(com).then(data => {
+// 		console.log(`Naissances à ${ville}:`, data);
+// 	});
+// }
+
+async function loadPopulation(com) {
+	// On recupere les 5 dernieres annees
+	const currentYear = new Date().getFullYear();
+
+	const years = [];
+	for (let i = 1; i <= 5; i++) {
+		years.push(currentYear - i);
+	}
+
+	const timeParams = years.map(y => `TIME_PERIOD=${y}`).join("&");
+
+		// On prepare les params
+	const params = `GEO=COM-${com}&${timeParams}&POPREF_MEASURE=PMUN`;
+
+	// On appelle l'API
+	const data = await fetchAPI("DS_POPULATIONS_HISTORIQUES", params);
+
+	// On traite les resultats
+	const result = data.observations.map(obs => ({
+		annee: obs.dimensions.TIME_PERIOD,
+		populations:
+			obs.measures.OBS_VALUE_NIVEAU?.value ??
+			obs.measures.OBS_VALUE
+	}));
+
+	return result;
 }
+
+// Test de la fonction de chargement de la populations
+// for (const [ville, com] of Object.entries(villes)) {
+// 	loadPopulation(com).then(data => {
+// 		console.log(`Population à ${ville}:`, data);
+// 	});
+// }
