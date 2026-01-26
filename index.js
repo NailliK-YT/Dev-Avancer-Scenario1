@@ -133,8 +133,8 @@ async function loadPopulationSexeAge(com) {
 }
 
 // Test de la fonction loadPopulationSexeAge
-for (const [ville, com] of Object.entries(villes)) {
-	loadPopulationSexeAge(com).then(data => {
-		console.log(`Population sexe/âge à ${ville}:`, data);
-	});
-}
+// for (const [ville, com] of Object.entries(villes)) {
+// 	loadPopulationSexeAge(com).then(data => {
+// 		console.log(`Population sexe/âge à ${ville}:`, data);
+// 	});
+// }
