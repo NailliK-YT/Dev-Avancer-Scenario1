@@ -170,8 +170,8 @@ async function loadDiplomes(com) {
 }
 
 // Test de la fonction loadDiplomes
-for (const [ville, com] of Object.entries(villes)) {
-	loadDiplomes(com).then(data => {
-		console.log(`Diplômes à ${ville}:`, data);
-	});
-}
+// for (const [ville, com] of Object.entries(villes)) {
+// 	loadDiplomes(com).then(data => {
+// 		console.log(`Diplômes à ${ville}:`, data);
+// 	});
+// }
