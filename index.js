@@ -138,3 +138,40 @@ async function loadPopulationSexeAge(com) {
 // 		console.log(`Population sexe/âge à ${ville}:`, data);
 // 	});
 // }
+
+// ============================================================
+// DIPLÔMES ET NIVEAUX D'ÉTUDES
+// Récupère la répartition par niveau de diplôme
+// Dataset: DS_RP_DIPLOMES_PRINC (Diplômes et Formation)
+// Exemple: https://api.insee.fr/melodi/data/DS_RP_DIPLOMES_PRINC?TIME_PERIOD=2022&SEX=_T&GEO=2025-BV2022-76758
+// ============================================================
+async function loadDiplomes(com) {
+	// On utilise uniquement l'année 2022
+	const annee = 2022;
+
+	// On prepare les params
+	// GEO: COM-{code commune}
+	// SEX: _T = Total
+	const params = `GEO=COM-${com}&TIME_PERIOD=${annee}&SEX=_T`;
+
+	// On appelle l'API
+	const data = await fetchAPI("DS_RP_DIPLOMES_PRINC", params);
+
+	// On traite les resultats
+	const result = data.observations.map(obs => ({
+		annee: obs.dimensions.TIME_PERIOD,
+		diplome: obs.dimensions.EDUC,
+		population:
+			obs.measures.OBS_VALUE_NIVEAU?.value ??
+			obs.measures.OBS_VALUE
+	}));
+
+	return result;
+}
+
+// Test de la fonction loadDiplomes
+for (const [ville, com] of Object.entries(villes)) {
+	loadDiplomes(com).then(data => {
+		console.log(`Diplômes à ${ville}:`, data);
+	});
+}
