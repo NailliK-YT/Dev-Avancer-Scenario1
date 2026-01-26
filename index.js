@@ -1,11 +1,14 @@
 const token = "TON_ACCESS_TOKEN";
 
 const villes = {
-	"LeHavre": "76351",
-	"Rouen": "76540",
-	"Caen": "14118",
-	"Nantes": "44109"
-}
+	"Fecamp": "76260",
+	"Yvetot": "76758",
+	"Montivilliers": "76447",
+	"Lisieux": "14366",
+	"Herouville-Saint-Clair": "14327",
+	"Elbeuf": "76231",
+	"Barentin": "76057"
+};
 
 async function fetchAPI(dataSet, params) {
 	const url = `https://api.insee.fr/melodi/data/${dataSet}?${params}`;
@@ -41,7 +44,7 @@ async function loadNaissance(com) {
 
 	// On prepare les params
 	const params = `GEO=COM-${com}&${timeParams}&EC_MEASURE=LVB`;
-	
+
 	// On appelle l'API
 	const data = await fetchAPI("DS_ETAT_CIVIL_NAIS_COMMUNES", params);
 
@@ -74,7 +77,7 @@ async function loadPopulation(com) {
 
 	const timeParams = years.map(y => `TIME_PERIOD=${y}`).join("&");
 
-		// On prepare les params
+	// On prepare les params
 	const params = `GEO=COM-${com}&${timeParams}&POPREF_MEASURE=PMUN`;
 
 	// On appelle l'API
