@@ -60,11 +60,11 @@ async function loadNaissance(com) {
 }
 
 // Test de la fonction de chargement des naissances
-// for (const [ville, com] of Object.entries(villes)) {
-// 	loadNaissance(com).then(data => {
-// 		console.log(`Naissances à ${ville}:`, data);
-// 	});
-// }
+//for (const [ville, com] of Object.entries(villes)) {
+//	loadNaissance(com).then(data => {
+//		console.log(`Naissances à ${ville}:`, data);
+//	});
+//}
 
 async function loadPopulation(com) {
 	// On recupere les 5 dernieres annees
@@ -100,3 +100,41 @@ async function loadPopulation(com) {
 // 		console.log(`Population à ${ville}:`, data);
 // 	});
 // }
+
+// ============================================================
+// POPULATION PAR SEXE ET ÂGE
+// Récupère la pyramide des âges et la répartition par sexe
+// Dataset: DS_RP_POPULATION_COMP (Recensement de la population - Compositions)
+// Exemple: https://api.insee.fr/melodi/data/DS_RP_POPULATION_COMP?SEX=F&PCS=_T&TIME_PERIOD=2022&GEO=2025-BV2022-76758
+// ============================================================
+async function loadPopulationSexeAge(com) {
+	// On utilise uniquement l'année 2022
+	const annee = 2022;
+
+	// On prepare les params avec le format correct
+	// GEO: COM-{code commune}
+	// PCS: _T = Toutes catégories socioprofessionnelles
+	const params = `GEO=COM-${com}&TIME_PERIOD=${annee}&PCS=_T`;
+
+	// On appelle l'API
+	const data = await fetchAPI("DS_RP_POPULATION_COMP", params);
+
+	// On traite les resultats
+	const result = data.observations.map(obs => ({
+		annee: obs.dimensions.TIME_PERIOD,
+		sexe: obs.dimensions.SEX,
+		trancheAge: obs.dimensions.AGE,
+		population:
+			obs.measures.OBS_VALUE_NIVEAU?.value ??
+			obs.measures.OBS_VALUE
+	}));
+
+	return result;
+}
+
+// Test de la fonction loadPopulationSexeAge
+for (const [ville, com] of Object.entries(villes)) {
+	loadPopulationSexeAge(com).then(data => {
+		console.log(`Population sexe/âge à ${ville}:`, data);
+	});
+}
