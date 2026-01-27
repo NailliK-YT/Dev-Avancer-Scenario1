@@ -31,6 +31,12 @@ async function fetchAPI(dataSet, params) {
 	return data;
 }
 
+// ============================================================
+// NAISSANCES
+// Récupère le nombre de naissances vivantes sur les 5 dernières années
+// Dataset: DS_ETAT_CIVIL_NAIS_COMMUNES (État civil - Naissances par commune)
+// Exemple: https://api.insee.fr/melodi/data/DS_ETAT_CIVIL_NAIS_COMMUNES?GEO=COM-76758&TIME_PERIOD=2024&EC_MEASURE=LVB
+// ============================================================
 async function loadNaissance(com) {
 	// On recupere les 5 dernieres annees
 	const currentYear = new Date().getFullYear();
@@ -66,6 +72,12 @@ async function loadNaissance(com) {
 //	});
 //}
 
+// ============================================================
+// POPULATION HISTORIQUE
+// Récupère la population municipale sur les 5 dernières années
+// Dataset: DS_POPULATIONS_HISTORIQUES (Populations historiques)
+// Exemple: https://api.insee.fr/melodi/data/DS_POPULATIONS_HISTORIQUES?GEO=COM-76758&TIME_PERIOD=2022&POPREF_MEASURE=PMUN
+// ============================================================
 async function loadPopulation(com) {
 	// On recupere les 5 dernieres annees
 	const currentYear = new Date().getFullYear();
@@ -175,3 +187,51 @@ async function loadDiplomes(com) {
 // 		console.log(`Diplômes à ${ville}:`, data);
 // 	});
 // }
+
+// ============================================================
+// TAILLE DES MENAGES
+// Récupère la taille moyenne des menages
+// Dataset: DS_RP_MENAGES_COMP (Menages)
+// Exemple: https://api.insee.fr/melodi/data/DS_RP_MENAGES_COMP?TPH=_T&PCS=_T&RP_MEASURE=DWELLINGS&TIME_PERIOD=2022&GEO=2025-BV2022-76758
+// ============================================================
+async function loadTailleMenages(com) {
+	// On utilise uniquement l'année 2022
+	const annee = 2022;
+
+	// On prepare les params
+	// GEO: COM-{code commune}
+	// TPH: _T = Type de menage (Total)
+	// PCS: _T = Catégorie socioprofessionnelle (Total)
+	// RP_MEASURE: DWELLINGS = Nombre de logements
+	const params = `GEO=COM-${com}&TIME_PERIOD=${annee}&TPH=_T&PCS=_T&RP_MEASURE=DWELLINGS`;
+
+	// On appelle l'API pour les ménages
+	const data = await fetchAPI("DS_RP_MENAGES_COMP", params);
+
+	// On récupère la population pour l'année 2022
+	const populationData = await loadPopulation(com);
+	const pop2022 = populationData.find(p => p.annee === String(annee));
+	const populationMax = pop2022 ? pop2022.populations : 0;
+
+	// On traite les resultats et calcule la taille moyenne
+	const result = data.observations.map(obs => {
+		const nbLogements = obs.measures.OBS_VALUE_NIVEAU?.value ?? obs.measures.OBS_VALUE;
+		const tailleMoyenne = populationMax > 0 ? populationMax / nbLogements : 0;
+
+		return {
+			annee: obs.dimensions.TIME_PERIOD,
+			nbLogements: nbLogements,
+			population: populationMax,
+			tailleMoyenneMenage: tailleMoyenne
+		};
+	});
+
+	return result;
+}
+
+// Test de la fonction loadTailleMenages
+for (const [ville, com] of Object.entries(villes)) {
+	loadTailleMenages(com).then(data => {
+		console.log(`Taille des menages à ${ville}:`, data);
+	});
+}
