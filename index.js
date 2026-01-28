@@ -155,11 +155,24 @@ async function loadPopulationSexeAge(com) {
 // DIPLÔMES ET NIVEAUX D'ÉTUDES
 // Récupère la répartition par niveau de diplôme
 // Dataset: DS_RP_DIPLOMES_PRINC (Diplômes et Formation)
-// Exemple: https://api.insee.fr/melodi/data/DS_RP_DIPLOMES_PRINC?TIME_PERIOD=2022&SEX=_T&GEO=2025-BV2022-76758
+// Exemple: https://api.insee.fr/melodi/data/DS_RP_DIPLOMES_PRINC?TIME_PERIOD=2022&SEX=_T&GEO=COM-76758
 // ============================================================
 async function loadDiplomes(com) {
 	// On utilise uniquement l'année 2022
 	const annee = 2022;
+
+	// Mapping des codes EDUC vers des libellés lisibles
+	const diplomesLabels = {
+		'001T100_RP': 'Sans diplôme ou CEP',
+		'200_RP': 'BEPC, brevet',
+		'300_RP': 'CAP, BEP',
+		'350T351_RP': 'Bac professionnel',
+		'400_RP': 'Bac général ou techno',
+		'500_RP': 'Bac+2 (BTS, DUT)',
+		'600_RP': 'Bac+3/4 (Licence, Master 1)',
+		'700_RP': 'Bac+5 et plus',
+		'_T': 'Total'
+	};
 
 	// On prepare les params
 	// GEO: COM-{code commune}
@@ -169,24 +182,39 @@ async function loadDiplomes(com) {
 	// On appelle l'API
 	const data = await fetchAPI("DS_RP_DIPLOMES_PRINC", params);
 
-	// On traite les resultats
-	const result = data.observations.map(obs => ({
-		annee: obs.dimensions.TIME_PERIOD,
-		diplome: obs.dimensions.EDUC,
-		population:
-			obs.measures.OBS_VALUE_NIVEAU?.value ??
-			obs.measures.OBS_VALUE
-	}));
+	// On récupère le total pour calculer les pourcentages
+	const totalObs = data.observations.find(obs => obs.dimensions.EDUC === '_T');
+	const populationTotale = totalObs
+		? (totalObs.measures.OBS_VALUE_NIVEAU?.value ?? totalObs.measures.OBS_VALUE)
+		: 1;
+
+	// On traite les resultats (exclure le total)
+	const result = data.observations
+		.filter(obs => obs.dimensions.EDUC !== '_T')
+		.map(obs => {
+			const code = obs.dimensions.EDUC;
+			const population = obs.measures.OBS_VALUE_NIVEAU?.value ?? obs.measures.OBS_VALUE;
+			const pourcentage = (population / populationTotale) * 100;
+
+			return {
+				annee: obs.dimensions.TIME_PERIOD,
+				code: code,
+				diplome: diplomesLabels[code] || code,
+				population: Math.round(population),
+				pourcentage: Math.round(pourcentage * 10) / 10
+			};
+		})
+		.sort((a, b) => b.population - a.population); // Trier par population décroissante
 
 	return result;
 }
 
 // Test de la fonction loadDiplomes
-// for (const [ville, com] of Object.entries(villes)) {
-// 	loadDiplomes(com).then(data => {
-// 		console.log(`Diplômes à ${ville}:`, data);
-// 	});
-// }
+for (const [ville, com] of Object.entries(villes)) {
+	loadDiplomes(com).then(data => {
+		console.log(`Diplômes à ${ville}:`, data);
+	});
+}
 
 // ============================================================
 // TAILLE DES MENAGES
