@@ -306,8 +306,71 @@ async function loadPrixImmobilier(com) {
 }
 
 // Test de la fonction loadPrixImmobilier
+//for (const [ville, com] of Object.entries(villes)) {
+//	loadPrixImmobilier(com).then(data => {
+//		console.log(`Prix immobilier à ${ville}:`, data);
+//	});
+//}
+
+// ============================================================
+// EMPLOI ET TAUX D'ACTIVITÉ
+// Récupère le nombre d'emplois et calcule le taux d'activité
+// Taux d'activité = population active / population en âge de travailler (15+ ans)
+// Dataset: DS_RP_EMPLOI_LR_COMP (Emploi)
+// Exemple: https://api.insee.fr/melodi/data/DS_RP_EMPLOI_LR_COMP?TIME_PERIOD=2022&PCS=_T&EMPSTA_ENQ=1T2&GEO=COM-76758
+// ============================================================
+async function loadTauxActiviteEtEmplois(com) {
+	// On utilise uniquement l'année 2022
+	const year = 2022;
+
+	// On prepare les params pour récupérer la population active
+	// GEO: COM-{code commune}
+	// TIME_PERIOD: 2022
+	// PCS: _T = Catégorie socioprofessionnelle (Total)
+	// EMPSTA_ENQ: 1T2 = Actifs (en emploi + chômeurs)
+	const params = `GEO=COM-${com}&TIME_PERIOD=${year}&PCS=_T&EMPSTA_ENQ=1T2`;
+
+	// On appelle l'API pour la population active
+	const data = await fetchAPI("DS_RP_EMPLOI_LR_COMP", params);
+
+	// On récupère la population par sexe et âge
+	const popSexeAge = await loadPopulationSexeAge(com);
+
+	// Filtrer: sexe total (_T) et âge >= 15 ans
+	// Les codes AGE de l'INSEE: Y_LT15 = moins de 15 ans, Y15-19, Y20-24, etc.
+	const pop15Plus = popSexeAge.filter(p =>
+		p.sexe === '_T' &&
+		p.trancheAge !== 'Y_LT15' &&
+		p.trancheAge !== '_T' // Exclure le total général
+	);
+
+	// Calculer la population en âge de travailler (15+ ans)
+	const populationEnAgeDeTravail = pop15Plus.reduce((sum, p) => sum + p.population, 0);
+
+	// On traite les resultats
+	const result = data.observations.map(obs => {
+		const populationActive = obs.measures.OBS_VALUE_NIVEAU?.value ?? obs.measures.OBS_VALUE;
+
+		// Taux d'activité = population active / population en âge de travailler (15+ ans)
+		const tauxActivite = populationEnAgeDeTravail > 0
+			? (populationActive / populationEnAgeDeTravail) * 100
+			: 0;
+
+		return {
+			annee: obs.dimensions.TIME_PERIOD,
+			populationActive: populationActive,
+			populationEnAgeDeTravail: populationEnAgeDeTravail,
+			tauxActivite: Math.round(tauxActivite * 100) / 100 // en %
+		};
+	});
+
+	return result;
+}
+
+// Test de la fonction loadTauxActiviteEtEmplois
 for (const [ville, com] of Object.entries(villes)) {
-	loadPrixImmobilier(com).then(data => {
-		console.log(`Prix immobilier à ${ville}:`, data);
+	loadTauxActiviteEtEmplois(com).then(data => {
+		console.log(`Taux d'activité et emplois à ${ville}:`, data);
 	});
 }
+
