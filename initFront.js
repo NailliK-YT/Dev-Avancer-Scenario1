@@ -1,42 +1,66 @@
-// Données générales pour le tableau
-const villesData = {
-	"Fecamp": { cp: "76260", pop: "17 961", dens: "1 110", etudes: "22%" },
-	"Yvetot": { cp: "76758", pop: "11 677", dens: "950", etudes: "25%" },
-	"Montivilliers": { cp: "76447", pop: "15 671", dens: "820", etudes: "28%" },
-	"Lisieux": { cp: "14366", pop: "19 540", dens: "1 050", etudes: "21%" },
-	"Herouville-Saint-Clair": { cp: "14327", pop: "22 473", dens: "2 100", etudes: "32%" },
-	"Elbeuf": { cp: "76231", pop: "15 774", dens: "1 450", etudes: "19%" },
-	"Barentin": { cp: "76057", pop: "12 227", dens: "980", etudes: "20%" }
-};
+// Données générales pour le tableau (utilise l'objet villes de index.js)
+// L'objet villes est défini dans index.js et contient les codes communes
+const villesData = Object.fromEntries(
+	Object.entries(villes).map(([nom, cp]) => [nom, { cp }])
+);
 
-// Données de prix historiques en dur (format identique aux naissances)
-const prixHistoriques = {
-	"76260": [{ annee: "2021", prix: 1950 }, { annee: "2022", prix: 2050 }, { annee: "2023", prix: 2100 }, { annee: "2024", prix: 2150 }],
-	"76758": [{ annee: "2021", prix: 1800 }, { annee: "2022", prix: 1850 }, { annee: "2023", prix: 1950 }, { annee: "2024", prix: 2000 }],
-	"76447": [{ annee: "2021", prix: 2200 }, { annee: "2022", prix: 2300 }, { annee: "2023", prix: 2400 }, { annee: "2024", prix: 2450 }],
-	"14366": [{ annee: "2021", prix: 1700 }, { annee: "2022", prix: 1750 }, { annee: "2023", prix: 1850 }, { annee: "2024", prix: 1900 }],
-	"14327": [{ annee: "2021", prix: 2000 }, { annee: "2022", prix: 2100 }, { annee: "2023", prix: 2200 }, { annee: "2024", prix: 2300 }],
-	"76231": [{ annee: "2021", prix: 1450 }, { annee: "2022", prix: 1500 }, { annee: "2023", prix: 1600 }, { annee: "2024", prix: 1650 }],
-	"76057": [{ annee: "2021", prix: 1900 }, { annee: "2022", prix: 1980 }, { annee: "2023", prix: 2050 }, { annee: "2024", prix: 2100 }]
-};
-
-function fillCityTable() {
+// Fonction asynchrone pour remplir le tableau avec les données de l'API
+async function fillCityTable() {
 	const tbody = document.getElementById('cityTableBody');
 	if (!tbody) return;
 
-	tbody.innerHTML = Object.entries(villesData).map(([nom, info]) => {
-		// On récupère le dernier prix connu dans notre tableau en dur
-		const dernierPrix = prixHistoriques[info.cp].slice(-1)[0].prix;
-		return `
-        <tr>
-            <td><strong>${nom}</strong></td>
-            <td>${info.cp}</td>
-            <td>${info.pop} hab.</td>
-            <td>${info.dens}</td>
-            <td>${info.etudes}</td>
-            <td><span class="badge bg-primary">${dernierPrix} €/m²</span></td>
-        </tr>`;
-	}).join('');
+	// Afficher un spinner de chargement
+	tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Chargement...</span></div></td></tr>';
+
+	// Charger les données pour chaque ville
+	const rows = [];
+	for (const [nom, cp] of Object.entries(villes)) {
+		try {
+			// Charger les données en parallèle pour chaque ville
+			const [popData, densiteData, diplomesData, prixData] = await Promise.all([
+				loadPopulation(cp),
+				loadDensitePopulation(cp),
+				loadDiplomes(cp),
+				loadPrixImmobilier(cp)
+			]);
+
+			// Récupérer la population la plus récente
+			const pop = popData.length > 0 ? popData.sort((a, b) => b.annee - a.annee)[0].populations : 'N/A';
+
+			// Récupérer la densité
+			const dens = densiteData.length > 0 ? Math.round(densiteData[0].densitePopulation) : 'N/A';
+
+			// Calculer le pourcentage d'études supérieures (Bac+2 et plus)
+			const totalPop = diplomesData.reduce((sum, d) => sum + d.population, 0);
+			const etudesSup = diplomesData
+				.filter(d => ['Bac+2 (BTS, DUT)', 'Bac+3/4 (Licence, Master 1)', 'Bac+5 et plus'].includes(d.diplome))
+				.reduce((sum, d) => sum + d.population, 0);
+			const etudes = totalPop > 0 ? Math.round((etudesSup / totalPop) * 100) : 0;
+
+			// Récupérer le prix au m²
+			const prix = prixData.prixMoyenM2 || 'N/A';
+
+			rows.push(`
+				<tr>
+					<td><strong>${nom}</strong></td>
+					<td>${cp}</td>
+					<td>${pop.toLocaleString('fr-FR')} hab.</td>
+					<td>${dens.toLocaleString('fr-FR')}</td>
+					<td>${etudes}%</td>
+					<td><span class="badge bg-primary">${prix.toLocaleString('fr-FR')} €/m²</span></td>
+				</tr>`);
+		} catch (error) {
+			console.error(`Erreur pour ${nom}:`, error);
+			rows.push(`
+				<tr>
+					<td><strong>${nom}</strong></td>
+					<td>${cp}</td>
+					<td colspan="4" class="text-danger">Erreur de chargement</td>
+				</tr>`);
+		}
+	}
+
+	tbody.innerHTML = rows.join('');
 }
 // Variables pour savoir si les graphiques ont déjà été chargés
 let naissancesLoaded = false;
@@ -63,7 +87,7 @@ async function renderNaissances() {
 	// Vider le message de chargement avant de commencer
 	setTimeout(() => {
 		grid.innerHTML = '';
-		
+
 		// Créer tous les canvas d'abord
 		const canvasElements = [];
 		for (const [nom, info] of Object.entries(villesData)) {
@@ -83,9 +107,13 @@ async function renderNaissances() {
 		// Ensuite charger les données et créer les graphiques
 		canvasElements.forEach(async ({ nom, info }) => {
 			try {
-				const birthData = await loadNaissance(info.cp);
+				const [birthData, prixData] = await Promise.all([
+					loadNaissance(info.cp),
+					loadPrixImmobilier(info.cp)
+				]);
 				const sortedBirths = birthData.sort((a, b) => a.annee - b.annee);
-				const sortedPrices = prixHistoriques[info.cp].sort((a, b) => a.annee - b.annee);
+				// On utilise le prix moyen au m² pour chaque année (même valeur car pas d'historique)
+				const prixMoyen = prixData.prixMoyenM2 || 0;
 
 				const ctx = document.getElementById(`chart-${info.cp}`).getContext('2d');
 
@@ -102,7 +130,7 @@ async function renderNaissances() {
 							},
 							{
 								label: 'Prix m²',
-								data: sortedPrices.map(p => p.prix),
+								data: sortedBirths.map(() => prixMoyen),
 								type: 'line',
 								borderColor: '#ffc107',
 								borderWidth: 3,
@@ -144,7 +172,7 @@ async function renderPopulation() {
 
 	setTimeout(() => {
 		grid.innerHTML = '';
-		
+
 		const canvasElements = [];
 		for (const [nom, info] of Object.entries(villesData)) {
 			const col = document.createElement('div');
@@ -164,7 +192,7 @@ async function renderPopulation() {
 			try {
 				const popData = await loadPopulationSexeAge(info.cp);
 				const prixData = await loadPrixImmobilier(info.cp);
-				
+
 				// Filtrer pour obtenir les données par sexe (Hommes et Femmes uniquement)
 				const hommes = popData.filter(p => p.sexe === 'M').reduce((sum, p) => sum + p.population, 0);
 				const femmes = popData.filter(p => p.sexe === 'F').reduce((sum, p) => sum + p.population, 0);
@@ -225,7 +253,7 @@ async function renderMenages() {
 
 	setTimeout(() => {
 		grid.innerHTML = '';
-		
+
 		const canvasElements = [];
 		for (const [nom, info] of Object.entries(villesData)) {
 			const col = document.createElement('div');
@@ -245,7 +273,7 @@ async function renderMenages() {
 			try {
 				const menagesData = await loadTailleMenages(info.cp);
 				const prixData = await loadPrixImmobilier(info.cp);
-				
+
 				const tailleMoyenne = menagesData[0]?.tailleMoyenneMenage || 0;
 
 				const ctx = document.getElementById(`chart-menages-${info.cp}`).getContext('2d');
@@ -305,7 +333,7 @@ async function renderDiplomes() {
 
 	setTimeout(() => {
 		grid.innerHTML = '';
-		
+
 		const canvasElements = [];
 		for (const [nom, info] of Object.entries(villesData)) {
 			const col = document.createElement('div');
@@ -325,10 +353,10 @@ async function renderDiplomes() {
 			try {
 				const diplomesData = await loadDiplomes(info.cp);
 				const prixData = await loadPrixImmobilier(info.cp);
-				
+
 				// Grouper par niveau de diplôme
 				const diplomeLabels = [...new Set(diplomesData.map(d => d.diplome))];
-				const diplomeValues = diplomeLabels.map(label => 
+				const diplomeValues = diplomeLabels.map(label =>
 					diplomesData.filter(d => d.diplome === label).reduce((sum, d) => sum + d.population, 0)
 				);
 
@@ -388,7 +416,7 @@ async function renderPopulationActive() {
 
 	setTimeout(() => {
 		grid.innerHTML = '';
-		
+
 		const canvasElements = [];
 		for (const [nom, info] of Object.entries(villesData)) {
 			const col = document.createElement('div');
@@ -408,7 +436,7 @@ async function renderPopulationActive() {
 			try {
 				const activeData = await loadTauxActiviteEtEmplois(info.cp);
 				const prixData = await loadPrixImmobilier(info.cp);
-				
+
 				const tauxActivite = activeData[0]?.tauxActivite || 0;
 
 				const ctx = document.getElementById(`chart-active-${info.cp}`).getContext('2d');
@@ -468,7 +496,7 @@ async function renderDensite() {
 
 	setTimeout(() => {
 		grid.innerHTML = '';
-		
+
 		const canvasElements = [];
 		for (const [nom, info] of Object.entries(villesData)) {
 			const col = document.createElement('div');
@@ -488,7 +516,7 @@ async function renderDensite() {
 			try {
 				const densiteData = await loadDensitePopulation(info.cp);
 				const prixData = await loadPrixImmobilier(info.cp);
-				
+
 				const densite = densiteData[0]?.densitePopulation || 0;
 
 				const ctx = document.getElementById(`chart-densite-${info.cp}`).getContext('2d');
@@ -536,7 +564,7 @@ async function renderDensite() {
 
 document.addEventListener('DOMContentLoaded', () => {
 	fillCityTable();
-	
+
 	// Écouteurs pour chaque accordéon
 	const collapseNaissances = document.getElementById('collapseNaissances');
 	if (collapseNaissances) {
