@@ -367,10 +367,4 @@ async function loadTauxActiviteEtEmplois(com) {
 	return result;
 }
 
-// Test de la fonction loadTauxActiviteEtEmplois
-for (const [ville, com] of Object.entries(villes)) {
-	loadTauxActiviteEtEmplois(com).then(data => {
-		console.log(`Taux d'activité et emplois à ${ville}:`, data);
-	});
-}
 
