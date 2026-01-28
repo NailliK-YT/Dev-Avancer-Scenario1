@@ -40,14 +40,80 @@
 
     <div class="accordion" id="mainAccordion">
         <div class="accordion-item">
-            <h2 class="accordion-header" id="headingCharts">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCharts" aria-expanded="true" aria-controls="collapseCharts">
+            <h2 class="accordion-header" id="headingNaissances">
+                <button id="btnNaissances" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNaissances" aria-expanded="false" aria-controls="collapseNaissances">
                     Analyse par Ville : Naissances vs Prix Immobilier
                 </button>
             </h2>
-            <div id="collapseCharts" class="accordion-collapse collapse show" aria-labelledby="headingCharts" data-bs-parent="#mainAccordion">
+            <div id="collapseNaissances" class="accordion-collapse collapse" aria-labelledby="headingNaissances" data-bs-parent="#mainAccordion">
                 <div class="accordion-body">
                     <div class="row" id="chartsGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingPopulation">
+                <button id="btnPopulation" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePopulation" aria-expanded="false" aria-controls="collapsePopulation">
+                    Analyse par Ville : Population par sexe et âge vs Prix Immobilier
+                </button>
+            </h2>
+            <div id="collapsePopulation" class="accordion-collapse collapse" aria-labelledby="headingPopulation" data-bs-parent="#mainAccordion">
+                <div class="accordion-body">
+                    <div class="row" id="chartsGridPopulation"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingMenages">
+                <button id="btnMenages" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMenages" aria-expanded="false" aria-controls="collapseMenages">
+                    Analyse par Ville : taille des ménages vs Prix Immobilier
+                </button>
+            </h2>
+            <div id="collapseMenages" class="accordion-collapse collapse" aria-labelledby="headingMenages" data-bs-parent="#mainAccordion">
+                <div class="accordion-body">
+                    <div class="row" id="chartsGridMenages"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingEtude">
+                <button id="btnEtude" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEtude" aria-expanded="false" aria-controls="collapseEtude">
+                    Analyse par Ville : Niveau d'etude vs Prix Immobilier
+                </button>
+            </h2>
+            <div id="collapseEtude" class="accordion-collapse collapse" aria-labelledby="headingEtude" data-bs-parent="#mainAccordion">
+                <div class="accordion-body">
+                    <div class="row" id="chartsGridEtude"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingActive">
+                <button id="btnActive" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActive" aria-expanded="false" aria-controls="collapseActive">
+                    Analyse par Ville : Population active vs Prix Immobilier
+                </button>
+            </h2>
+            <div id="collapseActive" class="accordion-collapse collapse" aria-labelledby="headingActive" data-bs-parent="#mainAccordion">
+                <div class="accordion-body">
+                    <div class="row" id="chartsGridActive"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingDensite">
+                <button id="btnDensite" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDensite" aria-expanded="false" aria-controls="collapseDensite">
+                    Analyse par Ville : Densité vs Prix Immobilier
+                </button>
+            </h2>
+            <div id="collapseDensite" class="accordion-collapse collapse" aria-labelledby="headingDensite" data-bs-parent="#mainAccordion">
+                <div class="accordion-body">
+                    <div class="row" id="chartsGridDensite"></div>
                 </div>
             </div>
         </div>
